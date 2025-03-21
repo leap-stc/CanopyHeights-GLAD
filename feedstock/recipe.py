@@ -36,6 +36,34 @@ file_names = re.findall(r'3deg_cogs/ETH_GlobalCanopyHeight_10m_2020_[NS]\d{2}[EW
 # ───────────────────────────────────────────────
 # 3. Read one tile and get global grid shape
 # ───────────────────────────────────────────────
+def read_canopy_file(file_name: str, base_url: str) -> xr.Dataset:
+    std_file_name = file_name.replace("_Map.tif", "_Map_SD.tif")
+    mean_url = base_url + file_name
+    std_url = base_url + std_file_name
+
+    try:
+        da_mean = rxr.open_rasterio(mean_url, masked=True, chunks={}).squeeze()
+        da_std = rxr.open_rasterio(std_url, masked=True, chunks={}).squeeze()
+
+        ch = da_mean.where(da_mean != 255)
+        std = da_std.where(da_std != 255)
+
+        lon, lat = np.meshgrid(da_mean.x.values, da_mean.y.values)
+        date = pd.to_datetime("2020-01-01")  # Static timestamp
+
+        ds = xr.Dataset(
+            {
+                "canopy_height": (("y", "x"), ch.data),
+                "std": (("y", "x"), std.data)
+            },
+            coords={
+                "time": date,
+                "lat": (("y", "x"), lat),
+                "lon": (("y", "x"), lon)
+            }
+        )
+
+        return ds
 example_ds = read_canopy_file(file_names[0], base_data_url)
 lat_vals = np.arange(-60, 90, 10/3600)  # Approx 10m resolution
 lon_vals = np.arange(-180, 180, 10/3600)
