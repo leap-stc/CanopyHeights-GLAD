@@ -91,16 +91,16 @@ for i, file_name in enumerate(file_names):
         ds = ds.chunk({"time": 1, "y": 3600, "x": 3600})  # Adjust chunk size if needed
 
         if first_write:
-            ds.to_zarr(mapper, mode="w", consolidated=True)  # Initialize store
+            ds.to_zarr(zarr_store_path, mode="w", consolidated=True)  # Initialize store
             first_write = False
         else:
-            ds.to_zarr(mapper, mode="a", append_dim="time", consolidated=True)  # Append
+            ds.to_zarr(zarr_store_path, mode="a", append_dim="time", consolidated=True)  # Append
 
 # ───────────────────────────────────────────────
 # 6. Load from Zarr Store and Visualise One Tile
 # ───────────────────────────────────────────────
 print("✅ Finished writing to Zarr. Loading dataset...")
-ds_zarr = xr.open_dataset(mapper, engine="zarr", chunks={})
+ds_zarr = xr.open_dataset(zarr_store_path, engine="zarr", chunks={})
 ds_zarr.isel(time=0).canopy_height.plot(cmap="viridis")
 plt.title("Global Canopy Height - GLAD 2020 (Tile 0)")
 plt.xlabel("Longitude")
