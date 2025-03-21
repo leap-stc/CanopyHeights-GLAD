@@ -13,8 +13,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import s3fs
 from dask.distributed import Client
-from obstore.fsspec import AsyncFsspecStore
-from obstore.store import S3Store
 
 client = Client()
 print(client)
@@ -70,18 +68,6 @@ def read_canopy_file(file_name: str, base_url: str) -> xr.Dataset:
     else:
         print(f"❌ Failed to fetch: {file_name}")
         return None
-
-# ───────────────────────────────────────────────
-# 4. Optional: Use obstore for reading
-# ───────────────────────────────────────────────
-read_store = S3Store(
-    zarr_store_path,
-    aws_endpoint=base_dir,
-    access_key_id="",
-    secret_access_key="",
-)
-read_fss = AsyncFsspecStore(read_store)
-
 # ───────────────────────────────────────────────
 # 5. Process and Write All Tiles to Zarr
 # ───────────────────────────────────────────────
