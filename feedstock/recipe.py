@@ -20,7 +20,7 @@ root_dir = "leap-pangeo-pipeline"
 product_name = "CanopyHeights-GLAD"
 zarr_store_path = os.path.join(root_dir, product_name, f"{product_name}.zarr")
 mapper_path = os.path.join(root_dir, f"{product_name}.zarr")
-base_data_url = "https://libdrive.ethz.ch/index.php/s/cO8or7iOe5dT2Rt/download?/"
+base_data_url = "https://libdrive.ethz.ch/index.php/s/cO8or7iOe5dT2Rt/download?path=/"
 
 # —— 3. Retrieve tile names from VRT file ——
 vrt_url = base_data_url + "ETH_GlobalCanopyHeight_10m_2020_mosaic_Map.vrt"
