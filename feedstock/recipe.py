@@ -20,14 +20,10 @@ root_dir = "leap-pangeo-pipeline"
 product_name = "CanopyHeights-GLAD"
 zarr_store_path = os.path.join(root_dir, product_name, f"{product_name}.zarr")
 mapper_path = os.path.join(root_dir, f"{product_name}.zarr")
-base_data_url = "https://libdrive.ethz.ch/index.php/s/cO8or7iOe5dT2Rt/download?path=/"
-
-# —— 3. Retrieve tile names from VRT file ——
-vrt_url = base_data_url + "ETH_GlobalCanopyHeight_10m_2020_mosaic_Map.vrt"
-print("requesting access")
-vrt_response = requests.get(vrt_url)
-print("finding files access")
-file_names = re.findall(r'3deg_cogs/ETH_GlobalCanopyHeight_10m_2020_[NS]\d{2}[EW]\d{3}_Map\\.tif', vrt_response.text)
+base_url = "https://libdrive.ethz.ch/index.php/s/cO8or7iOe5dT2Rt/download?path=/"
+vrt_file_url = base_url + "ETH_GlobalCanopyHeight_10m_2020_mosaic_Map.vrt"
+response = requests.get(vrt_file_url)
+file_names = re.findall(r'3deg_cogs/ETH_GlobalCanopyHeight_10m_2020_[NS]\d{2}[EW]\d{3}_Map\.tif', response.text)
 print(f"{len(file_names)} filenames are found")
 
 # —— 4. Read a Tile and Build Dataset ——
