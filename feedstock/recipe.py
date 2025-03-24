@@ -1,4 +1,3 @@
-
 # ───────────────────────────────────────────────
 # 1. Import Libraries
 # ───────────────────────────────────────────────
@@ -13,8 +12,6 @@ import rioxarray as rxr
 from datetime import datetime
 import warnings
 warnings.filterwarnings("ignore")
-import s3fs
-warnings.filterwarnings("ignore")
 
 # ───────────────────────────────────────────────
 # 2. Define Paths and Remote Access
@@ -22,16 +19,11 @@ warnings.filterwarnings("ignore")
 base_dir = "https://nyu1.osn.mghpcc.org"
 root_dir = "leap-pangeo-pipeline"
 product_name = "CanopyHeights-GLAD"
-zarr_path = os.path.join(base_dir,root_dir, f"{product_name}.zarr")
-mapper_path = os.path.join(root_dir, product_name, f"{product_name}.zarr")
+store = os.path.join(root_dir, f"{product_name}.zarr")
+os.makedirs(root_dir, exist_ok=True)
 
 base_url = "https://libdrive.ethz.ch/index.php/s/cO8or7iOe5dT2Rt/download?path=/"
 vrt_file_url = base_url + "ETH_GlobalCanopyHeight_10m_2020_mosaic_Map.vrt"
-# Use s3fs for writing
-fs = s3fs.S3FileSystem(
-    key="", secret="", client_kwargs={"endpoint_url": base_dir}
-)
-store = fs.get_mapper(mapper_path)
 
 # ───────────────────────────────────────────────
 # 3. Discover Available Tiles
@@ -50,6 +42,8 @@ def read_canopy_file(file_name: str, base_url: str, i: int) -> xr.Dataset:
         std_file_name = file_name.replace("_Map.tif", "_Map_SD.tif")
         mean_url = base_url + file_name
         std_url = base_url + std_file_name
+
+        print(f"⏱️ Streaming and reading: {file_name}")
 
         response_mean = requests.get(mean_url, stream=True)
         response_std = requests.get(std_url, stream=True)
@@ -89,9 +83,8 @@ def read_canopy_file(file_name: str, base_url: str, i: int) -> xr.Dataset:
 # ───────────────────────────────────────────────
 first_written = False
 
-for i, file_name in enumerate(file_names[:50]):
-    if i % 100 == 0:
-        print(f"🌿 Processing tile {i + 1} of {len(file_names)}")
+for i, file_name in enumerate(file_names[:3]):
+    print(f"🌿 Processing tile {i + 1} of {len(file_names)}")
 
     ds = read_canopy_file(file_name, base_url,i)
     if ds is None:
@@ -111,10 +104,9 @@ for i, file_name in enumerate(file_names[:50]):
 # 6. Open and Plot Final Dataset
 # ───────────────────────────────────────────────
 print("🖼️ Plotting a subset for verification...")
-ds_zarr = xr.open_dataset(zarr_path, engine="zarr", chunks={})
+ds_zarr = xr.open_dataset(store, engine="zarr", chunks={})
 ds_zarr.isel(time=0).canopy_height.plot(cmap="viridis")
 plt.title("Global Canopy Height - GLAD 2020 (Subset)")
 plt.xlabel("Longitude")
 plt.ylabel("Latitude")
 plt.show()
-
