@@ -1,33 +1,50 @@
-# —— 1. Import Libraries and Start Dask ——
+# ───────────────────────────────────────────────
+# 1. Import Libraries
+# ───────────────────────────────────────────────
 import xarray as xr
 import numpy as np
-import rioxarray as rxr
 import pandas as pd
 import matplotlib.pyplot as plt
-import s3fs
-import re
 import requests
 import os
-from dask.distributed import Client
-from dask.diagnostics import ProgressBar
+import re
+import rioxarray as rxr
+from datetime import datetime
+import s3fs
+import warnings
+warnings.filterwarnings("ignore")
 
-client = Client(n_workers=4, threads_per_worker=4, memory_limit="4GB")
-print(client)
-
-# —— 2. Define Paths and Remote URLs ——
+# ───────────────────────────────────────────────
+# 2. Define Paths and Remote Access
+# ───────────────────────────────────────────────
 base_dir = "https://nyu1.osn.mghpcc.org"
 root_dir = "leap-pangeo-pipeline"
 product_name = "CanopyHeights-GLAD"
-zarr_store_path = os.path.join(root_dir, product_name, f"{product_name}.zarr")
+zarr_path = os.path.join(base_dir,root_dir, f"{product_name}.zarr")
 mapper_path = os.path.join(root_dir, f"{product_name}.zarr")
+store = os.path.join(root_dir, f"{product_name}.zarr")
+
+os.makedirs(root_dir, exist_ok=True)
+fs = s3fs.S3FileSystem(
+    key="", secret="", client_kwargs={"endpoint_url": base_dir}
+)
+store = fs.get_mapper(mapper_path)
+
 base_url = "https://libdrive.ethz.ch/index.php/s/cO8or7iOe5dT2Rt/download?path=/"
 vrt_file_url = base_url + "ETH_GlobalCanopyHeight_10m_2020_mosaic_Map.vrt"
+
+# ───────────────────────────────────────────────
+# 3. Discover Available Tiles
+# ───────────────────────────────────────────────
+print("🔍 Discovering available canopy height tiles...")
 response = requests.get(vrt_file_url)
 file_names = re.findall(r'3deg_cogs/ETH_GlobalCanopyHeight_10m_2020_[NS]\d{2}[EW]\d{3}_Map\.tif', response.text)
-print(f"{len(file_names)} filenames are found")
+print(f"✅ Found {len(file_names)} canopy height tiles.")
 
-# —— 4. Read a Tile and Build Dataset ——
-def read_canopy_file(file_name: str, base_url: str) -> xr.Dataset:
+# ───────────────────────────────────────────────
+# 4. Define Tile Reader
+# ───────────────────────────────────────────────
+def read_canopy_file(file_name: str, base_url: str, i: int) -> xr.Dataset:
     try:
         std_file_name = file_name.replace("_Map.tif", "_Map_SD.tif")
         mean_url = base_url + file_name
@@ -40,91 +57,56 @@ def read_canopy_file(file_name: str, base_url: str) -> xr.Dataset:
         std = da_std.where(da_std != 255)
 
         lon, lat = np.meshgrid(da_mean.x.values, da_mean.y.values)
-        date = pd.to_datetime("2020-01-01")
-
         tile_id_str = re.search(r'[NS]\d{2}[EW]\d{3}', file_name).group(0)
-        tile_id_array = np.full(ch.shape, tile_id_str, dtype=object)
+        time = datetime(2020, 1, 1)
 
-        ds = xr.Dataset(
+        return xr.Dataset(
             {
-                "canopy_height": ("y", "x", ch.data),
-                "std": ("y", "x", std.data),
-                "tile_id": ("y", "x", tile_id_array)
+                "canopy_height": (["lat", "lon"], ch.data),
+                "std": (["lat", "lon"], std.data)
             },
             coords={
-                "time": date,
-                "lat": ("y", "x", lat),
-                "lon": ("y", "x", lon)
+                "tile_id": [tile_id_str],
+                "time": [time],
+                "lat": da_mean.y.values,
+                "lon": da_mean.x.values
             }
         )
-        return ds
-
     except Exception as e:
-        print(f"⚠️ Error reading file {file_name}: {e}")
+        print(f"⚠️ Failed to read {file_name}: {e}")
         return None
 
-# —— 5. Create Global Grid Dimensions ——
-lat_vals = np.arange(-60, 90, 10 / 3600)
-lon_vals = np.arange(-180, 180, 10 / 3600)
-y_dim = len(lat_vals)
-x_dim = len(lon_vals)
-time_val = pd.to_datetime("2020-01-01")
+# ───────────────────────────────────────────────
+# 5. Iterate: Write first one as init, then append
+# ───────────────────────────────────────────────
+first_written = False
 
-# —— 6. Initialize Empty Zarr Dataset ——
-init_ds = xr.Dataset(
-    {
-        "canopy_height": ("time", "y", "x", np.empty((1, y_dim, x_dim), dtype=np.float32)),
-        "std": ("time", "y", "x", np.empty((1, y_dim, x_dim), dtype=np.float32)),
-        "tile_id": ("time", "y", "x", np.empty((1, y_dim, x_dim), dtype=object))
-    },
-    coords={
-        "time": [time_val],
-        "y": lat_vals,
-        "x": lon_vals
-    }
-)
-init_ds = init_ds.chunk({"time": 1, "y": 1000, "x": 1000})
-init_ds.to_zarr(zarr_store_path, mode="w", consolidated=False, compute=True)
-print("Zarr initialized")
+for i, file_name in enumerate(file_names[:100]):
+    if i % 10 == 0:
+        print(f"🌿 Processing tile {i + 1} of {len(file_names)}")
 
-# —— 7. Write Each Tile to the Zarr Region ——
-fs = s3fs.S3FileSystem(key="", secret="", client_kwargs={"endpoint_url": base_dir})
-mapper = fs.get_mapper(mapper_path)
-
-for i, file_name in enumerate(file_names):
-    print(f"🌿 Processing tile {i + 1} of {len(file_names)}: {file_name}")
-
-    ds = read_canopy_file(file_name, base_data_url)
+    ds = read_canopy_file(file_name, base_url, i)
     if ds is None:
         continue
 
-    ds = ds.expand_dims("time")
-    ds = ds.rename({"lat": "y", "lon": "x"})
-    ds = ds.chunk({"time": 1, "y": 1000, "x": 1000})
+    ds = ds.chunk({"tile_id": 1, "time": 1, "lat": 1000, "lon": 1000})
 
-    y_idx_start = np.searchsorted(lat_vals, ds.y.values.min())
-    y_idx_end = y_idx_start + ds.dims['y']
-    x_idx_start = np.searchsorted(lon_vals, ds.x.values.min())
-    x_idx_end = x_idx_start + ds.dims['x']
+    if not first_written:
+        # Initialise the Zarr store
+        ds.to_zarr(store, mode="w", consolidated=False)
+        first_written = True
+    else:
+        # Append subsequent tiles
+        ds.to_zarr(store, mode="a", consolidated=False, append_dim="tile_id")
 
-    try:
-        with ProgressBar():
-            ds.to_zarr(
-                mapper,
-                region={"time": slice(0, 1), "y": slice(y_idx_start, y_idx_end), "x": slice(x_idx_start, x_idx_end)},
-                compute=True
-            )
-    except Exception as e:
-        print(f"⚠️ Failed to write {file_name}: {e}")
-    del ds
-
-print("All tiles processed")
-
-# —— 8. Visual Check ——
-ds_zarr = xr.open_dataset(mapper, engine="zarr", chunks={})
-subset = ds_zarr.isel(x=slice(0, 1000), y=slice(0, 1000)).canopy_height.isel(time=0)
-subset.plot(cmap="viridis")
+# ───────────────────────────────────────────────
+# 6. Open and Plot Final Dataset
+# ───────────────────────────────────────────────
+print("🖼️ Plotting a subset for verification...")
+ds_zarr = xr.open_dataset(zarr_path, engine="zarr", chunks={})
+ds_zarr.isel(time=0).canopy_height.plot(cmap="viridis")
 plt.title("Global Canopy Height - GLAD 2020 (Subset)")
 plt.xlabel("Longitude")
 plt.ylabel("Latitude")
 plt.show()
+
