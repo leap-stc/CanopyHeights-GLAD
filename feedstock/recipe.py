@@ -21,12 +21,11 @@ base_dir = "https://nyu1.osn.mghpcc.org"
 root_dir = "leap-pangeo-pipeline"
 product_name = "CanopyHeights-GLAD"
 zarr_path = os.path.join(base_dir,root_dir, f"{product_name}.zarr")
-os.makedirs(root_dir, exist_ok=True)
+mapper_path = os.path.join(root_dir, product_name, f"{product_name}.zarr")
 
 base_url = "https://libdrive.ethz.ch/index.php/s/cO8or7iOe5dT2Rt/download?path=/"
 vrt_file_url = base_url + "ETH_GlobalCanopyHeight_10m_2020_mosaic_Map.vrt"
 # Use s3fs for writing
-mapper_path = os.path.join(root_dir, product_name, f"{product_name}.zarr")
 fs = s3fs.S3FileSystem(
     key="", secret="", client_kwargs={"endpoint_url": base_dir}
 )
