@@ -105,4 +105,8 @@ for i, file_name in enumerate(file_names[:100]):
 # ───────────────────────────────────────────────
 print("🖼️ Plotting a subset for verification...")
 ds_zarr = xr.open_dataset(store, engine="zarr", chunks={})
-print(ds_zarr.isel(time=0, tile_id=0).canopy_height.shape)
+ds_zarr.isel(tile_id=0, time=0).canopy_height.coarsen(lat=100, lon=100).mean().plot()
+plt.title("Global Canopy Height - GLAD 2020 (Subset)")
+plt.xlabel("Longitude")
+plt.ylabel("Latitude")
+plt.show()
