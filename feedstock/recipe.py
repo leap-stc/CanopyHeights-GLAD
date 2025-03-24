@@ -44,7 +44,7 @@ print(f"✅ Found {len(file_names)} canopy height tiles.")
 # ───────────────────────────────────────────────
 from rasterio.io import MemoryFile
 
-def read_canopy_file(file_name: str, base_url: str, i: int) -> xr.Dataset:
+def read_canopy_file(file_name: str, base_url: str) -> xr.Dataset:
     try:
         std_file_name = file_name.replace("_Map.tif", "_Map_SD.tif")
         mean_url = base_url + file_name
