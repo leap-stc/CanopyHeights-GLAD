@@ -84,7 +84,8 @@ def read_canopy_file(file_name: str, base_url: str, i: int) -> xr.Dataset:
 first_written = False
 
 for i, file_name in enumerate(file_names):
-    print(f"🌿 Processing tile {i + 1} of {len(file_names)}")
+    if i % 100 == 0:
+        print(f"🌿 Processing tile {i + 1} of {len(file_names)}")
 
     ds = read_canopy_file(file_name, base_url,i)
     if ds is None:
