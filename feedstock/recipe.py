@@ -83,7 +83,7 @@ def read_canopy_file(file_name: str, base_url: str, i: int) -> xr.Dataset:
 # ───────────────────────────────────────────────
 first_written = False
 
-for i, file_name in enumerate(file_names[:3]):
+for i, file_name in enumerate(file_names[:100]):
     print(f"🌿 Processing tile {i + 1} of {len(file_names)}")
 
     ds = read_canopy_file(file_name, base_url,i)
@@ -105,8 +105,4 @@ for i, file_name in enumerate(file_names[:3]):
 # ───────────────────────────────────────────────
 print("🖼️ Plotting a subset for verification...")
 ds_zarr = xr.open_dataset(store, engine="zarr", chunks={})
-ds_zarr.isel(time=0).canopy_height.plot(cmap="viridis")
-plt.title("Global Canopy Height - GLAD 2020 (Subset)")
-plt.xlabel("Longitude")
-plt.ylabel("Latitude")
-plt.show()
+print(ds_zarr.isel(time=0, tile_id=0).canopy_height.shape)
