@@ -1,3 +1,4 @@
+
 # ───────────────────────────────────────────────
 # 1. Import Libraries
 # ───────────────────────────────────────────────
@@ -11,6 +12,7 @@ import re
 import rioxarray as rxr
 from datetime import datetime
 import warnings
+warnings.filterwarnings("ignore")
 import s3fs
 warnings.filterwarnings("ignore")
 
@@ -43,14 +45,11 @@ print(f"✅ Found {len(file_names)} canopy height tiles.")
 # 4. Define Tile Reader
 # ───────────────────────────────────────────────
 from rasterio.io import MemoryFile
-
-def read_canopy_file(file_name: str, base_url: str) -> xr.Dataset:
+def read_canopy_file(file_name: str, base_url: str, i: int) -> xr.Dataset:
     try:
         std_file_name = file_name.replace("_Map.tif", "_Map_SD.tif")
         mean_url = base_url + file_name
         std_url = base_url + std_file_name
-
-        print(f"⏱️ Streaming and reading: {file_name}")
 
         response_mean = requests.get(mean_url, stream=True)
         response_std = requests.get(std_url, stream=True)
@@ -61,32 +60,28 @@ def read_canopy_file(file_name: str, base_url: str) -> xr.Dataset:
                     da_mean = rxr.open_rasterio(src_mean).squeeze()
                     da_std = rxr.open_rasterio(src_std).squeeze()
 
-                    # Clean out fill values (255 = no data)
                     ch = da_mean.where(da_mean != 255)
                     std = da_std.where(da_std != 255)
 
-                    tile_id_str = re.search(r'[NS]\d{2}[EW]\d{3}', file_name).group(0)
-                    time = datetime(2020, 1, 1)
-
                     return xr.Dataset(
-                        {
-                            "canopy_height": (["tile_id", "lat", "lon"], ch.data[np.newaxis, :, :]),
-                            "std": (["tile_id", "lat", "lon"], std.data[np.newaxis, :, :])
-                        },
-                        coords={
-                            "tile_id": [tile_id_str],
-                            "time": [time],
-                            "lat": da_mean.y.values,
-                            "lon": da_mean.x.values
-                        }
-                    )
+                            {
+                                    "canopy_height": (["lat", "lon"], ch.data),
+                                 "std": (["lat", "lon"], std.data),
+                            },
+                            coords={
+                                    "time": [datetime(2020, 1, 1)],
+                                    "tile_id": [i],#must be unique
+                                    "lat": da_mean.y.values,
+                                    "lon": da_mean.x.values
+                                }
+                            )
         else:
-            print(f"❌ Could not fetch {file_name}. Status codes: mean={response_mean.status_code}, std={response_std.status_code}")
+            print(f"❌ Could not fetch {file_name}.")
             return None
-
     except Exception as e:
         print(f"⚠️ Error reading file {file_name}: {e}")
         return None
+
 
 
 # ───────────────────────────────────────────────
@@ -94,11 +89,11 @@ def read_canopy_file(file_name: str, base_url: str) -> xr.Dataset:
 # ───────────────────────────────────────────────
 first_written = False
 
-for i, file_name in enumerate(file_names[:100]):
-    if i % 10 == 0:
+for i, file_name in enumerate(file_names[:50]):
+    if i % 100 == 0:
         print(f"🌿 Processing tile {i + 1} of {len(file_names)}")
 
-    ds = read_canopy_file(file_name, base_url)
+    ds = read_canopy_file(file_name, base_url,i)
     if ds is None:
         continue
 
@@ -122,3 +117,4 @@ plt.title("Global Canopy Height - GLAD 2020 (Subset)")
 plt.xlabel("Longitude")
 plt.ylabel("Latitude")
 plt.show()
+
