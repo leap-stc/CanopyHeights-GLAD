@@ -17,7 +17,8 @@ warnings.filterwarnings("ignore")
 # ───────────────────────────────────────────────
 # 2. Define Paths and Remote Access
 # ───────────────────────────────────────────────
-root_dir = "/Users/mitraasadollahi/Projects/CliMA/dummy/"
+base_dir = "https://nyu1.osn.mghpcc.org"
+root_dir = "leap-pangeo-pipeline"
 product_name = "CanopyHeights-GLAD"
 zarr_path = os.path.join(base_dir,root_dir, f"{product_name}.zarr")
 os.makedirs(root_dir, exist_ok=True)
