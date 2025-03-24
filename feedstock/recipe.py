@@ -10,28 +10,26 @@ import os
 import re
 import rioxarray as rxr
 from datetime import datetime
-import s3fs
 import warnings
+import s3fs
 warnings.filterwarnings("ignore")
 
 # ───────────────────────────────────────────────
 # 2. Define Paths and Remote Access
 # ───────────────────────────────────────────────
-base_dir = "https://nyu1.osn.mghpcc.org"
-root_dir = "leap-pangeo-pipeline"
+root_dir = "/Users/mitraasadollahi/Projects/CliMA/dummy/"
 product_name = "CanopyHeights-GLAD"
 zarr_path = os.path.join(base_dir,root_dir, f"{product_name}.zarr")
-mapper_path = os.path.join(root_dir, f"{product_name}.zarr")
-store = os.path.join(root_dir, f"{product_name}.zarr")
-
 os.makedirs(root_dir, exist_ok=True)
+
+base_url = "https://libdrive.ethz.ch/index.php/s/cO8or7iOe5dT2Rt/download?path=/"
+vrt_file_url = base_url + "ETH_GlobalCanopyHeight_10m_2020_mosaic_Map.vrt"
+# Use s3fs for writing
+mapper_path = os.path.join(root_dir, product_name, f"{product_name}.zarr")
 fs = s3fs.S3FileSystem(
     key="", secret="", client_kwargs={"endpoint_url": base_dir}
 )
 store = fs.get_mapper(mapper_path)
-
-base_url = "https://libdrive.ethz.ch/index.php/s/cO8or7iOe5dT2Rt/download?path=/"
-vrt_file_url = base_url + "ETH_GlobalCanopyHeight_10m_2020_mosaic_Map.vrt"
 
 # ───────────────────────────────────────────────
 # 3. Discover Available Tiles
@@ -56,7 +54,6 @@ def read_canopy_file(file_name: str, base_url: str, i: int) -> xr.Dataset:
         ch = da_mean.where(da_mean != 255)
         std = da_std.where(da_std != 255)
 
-        lon, lat = np.meshgrid(da_mean.x.values, da_mean.y.values)
         tile_id_str = re.search(r'[NS]\d{2}[EW]\d{3}', file_name).group(0)
         time = datetime(2020, 1, 1)
 
@@ -81,7 +78,7 @@ def read_canopy_file(file_name: str, base_url: str, i: int) -> xr.Dataset:
 # ───────────────────────────────────────────────
 first_written = False
 
-for i, file_name in enumerate(file_names):
+for i, file_name in enumerate(file_names[:100]):
     if i % 10 == 0:
         print(f"🌿 Processing tile {i + 1} of {len(file_names)}")
 
@@ -109,4 +106,3 @@ plt.title("Global Canopy Height - GLAD 2020 (Subset)")
 plt.xlabel("Longitude")
 plt.ylabel("Latitude")
 plt.show()
-
