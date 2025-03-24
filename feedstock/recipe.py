@@ -42,9 +42,6 @@ def read_canopy_file(file_name: str, base_url: str, i: int) -> xr.Dataset:
         std_file_name = file_name.replace("_Map.tif", "_Map_SD.tif")
         mean_url = base_url + file_name
         std_url = base_url + std_file_name
-
-        print(f"⏱️ Streaming and reading: {file_name}")
-
         response_mean = requests.get(mean_url, stream=True)
         response_std = requests.get(std_url, stream=True)
 
