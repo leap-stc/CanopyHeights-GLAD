@@ -27,7 +27,12 @@ base_dir = "https://nyu1.osn.mghpcc.org"
 root_dir = "leap-pangeo-pipeline"
 product_name = "CanopyHeights-GLAD"
 store = os.path.join(root_dir, f"{product_name}.zarr")
-os.makedirs(root_dir, exist_ok=True)
+fs = s3fs.S3FileSystem(
+    key="", secret="", client_kwargs={"endpoint_url": "https://nyu1.osn.mghpcc.org"}
+)
+
+mapper = fs.get_mapper("leap-pangeo-pipeline/CanopyHeights-GLAD/CanopyHeights-GLAD.zarr")
+
 
 base_url = "https://libdrive.ethz.ch/index.php/s/cO8or7iOe5dT2Rt/download?path=/"
 vrt_file_url = base_url + "ETH_GlobalCanopyHeight_10m_2020_mosaic_Map.vrt"
@@ -99,11 +104,12 @@ for i, file_name in enumerate(file_names[:2]):
 
     if not first_written:
         # Initialise the Zarr store
-        ds.to_zarr(store, mode="w", consolidated=False)
+        ds.to_zarr(mapper, mode="w", consolidated=False)
         first_written = True
     else:
         # Append subsequent tiles
-        ds.to_zarr(store, mode="a", consolidated=False, append_dim="tile_id")
+        ds.to_zarr(mapper, mode="a", consolidated=False, append_dim="tile_id")
+
 
 # ───────────────────────────────────────────────
 # 6. Open and Plot Final Dataset
