@@ -12,7 +12,14 @@ import rioxarray as rxr
 from datetime import datetime
 import warnings
 warnings.filterwarnings("ignore")
+from obstore.fsspec import AsyncFsspecStore
+from obstore.store import S3Store
+import pandas as pd
+from dask.distributed import Client
+import s3fs
 
+client = Client()
+client
 # ───────────────────────────────────────────────
 # 2. Define Paths and Remote Access
 # ───────────────────────────────────────────────
