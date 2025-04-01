@@ -14,7 +14,6 @@ import warnings
 warnings.filterwarnings("ignore")
 import pandas as pd
 from dask.distributed import Client
-import s3fs
 from rasterio.io import MemoryFile
 
 
@@ -170,33 +169,15 @@ def write_tiles_to_zarr(file_names, base_url, mapper, max_tiles=2):
 def main():
     # Start Dask client
     client = Client(
-        n_workers=1,
-        threads_per_worker=4,
-        memory_limit="64GB"
     )
     print("Dask client started")
 
     # Define storage and dataset parameters
     base_dir = "https://nyu1.osn.mghpcc.org"
-    root_dir = "leap-pangeo-pipeline"
+    root_dir = "gs://leap-persistant" #"leap-pangeo-pipeline"
     product_name = "CanopyHeights-GLAD"
     zarr_path = f"{root_dir}/{product_name}/{product_name}.zarr"
-    print(zarr_path)
 
-    # Clean up broken Zarr store if exists
-    fs_cleanup = s3fs.S3FileSystem(anon=True, client_kwargs={"endpoint_url": base_dir})
-    if fs_cleanup.exists(zarr_path):
-        print("🧹 Cleaning up broken Zarr store before retry...")
-        fs_cleanup.rm(zarr_path, recursive=True)
-    else:
-        print("✅ No existing Zarr store found, proceeding fresh.")
-
-    # Use a proper mapper for zarr writing
-    fs = s3fs.S3FileSystem(
-    key="",
-    secret="",
-    client_kwargs={"endpoint_url": "https://nyu1.osn.mghpcc.org"})
-    mapper = fs.get_mapper(zarr_path)
 
     # Define canopy dataset source
     base_url = "https://libdrive.ethz.ch/index.php/s/cO8or7iOe5dT2Rt/download?path=/"
@@ -222,16 +203,16 @@ def main():
 
         try:
             if not first_written:
-                print(f"📦 Initializing Zarr store at: {mapper.root}")
-                ds.to_zarr(mapper, mode="w", consolidated=False)
+                ds.to_zarr(zarr_path, mode="w", consolidated=False)
                 first_written = True
+                print("first write was successful")
             else:
-                ds.to_zarr(mapper, mode="a", consolidated=False, append_dim="tile_id")
+                ds.to_zarr(zarr_path, mode="a", consolidated=False, append_dim="tile_id")
         except Exception as e:
             print(f"❌ Failed to write tile {i}: {e}")
 
     # Optional: Plot one tile
-    plot_canopy_height_subset(mapper, tile_id=0, coarsen_factor=100)
+    plot_canopy_height_subset(zarr_path, tile_id=0, coarsen_factor=100)
 
     # Cleanup
     print("Workflow complete")
@@ -241,5 +222,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
