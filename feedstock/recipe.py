@@ -19,7 +19,6 @@ from dask.distributed import Client
 import s3fs
 
 client = Client()
-client
 # ───────────────────────────────────────────────
 # 2. Define Paths and Remote Access
 # ───────────────────────────────────────────────
