@@ -1,6 +1,0 @@
-pangeo-forge-recipes==0.10.7
-zarr<3.0.0 
-kerchunk==0.2.7
-apache-beam[gcp]
-gcsfs
-leap-data-management-utils==0.0.12
