@@ -15,6 +15,9 @@ tags:
 stores:
   - id: "CanopyHeights-GLA"
     name: "Canopy Heights GLA"
-    url: "https://nyu1.osn.mghpcc.org/leap-pangeo-pipeline/CanopyHeights-GLAD/CanopyHeights-GLAD.zarr"
+    url: "gs://leap-persistent/data-library/CanopyHeights-GLAD/CanopyHeights-GLAD.zarr"
     source: "ETH Global Sentinel-2 10m Canopy Height (2020)"
     source_url: "https://gee-community-catalog.org/projects/canopy/"
+
+
+

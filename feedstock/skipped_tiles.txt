@@ -1,0 +1,1 @@
+2650,3deg_cogs/ETH_GlobalCanopyHeight_10m_2020_S60W030_Map.tif,All NaNs
