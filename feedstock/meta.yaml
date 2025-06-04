@@ -23,9 +23,6 @@ provenance:
 
   license: "Creative Commons Attribution 4.0 (CC BY 4.0)"
 
-acknowledgements: >
-  The Canopy Heights dataset is based on the **ETH Global Sentinel-2 10m Canopy Height dataset (2020)** and incorporates methodologies from the **Global Land Analysis & Discovery (GLAD) group**. We acknowledge **ETH Zurich** for providing the Sentinel-2-derived canopy height data, accessible at https://gee-community-catalog.org/projects/canopy/. This dataset has been validated using various in-situ and airborne LiDAR measurements. We also thank the NASA GEDI mission, OpenTopography, and Forest Inventory and Analysis (FIA) programs for providing reference datasets that contributed to canopy height validation. 
-
 citation:
   - authors: "Potapov, P., Hansen, M.C., Pickens, A., Hernandez-Serna, A., Tyukavina, A., Turubanova, S., Zalles, V., Li, X., Khan, A., Stolle, F., Harris, N., Song, X.-P., Baggett, A., Kommareddy, I., Kommareddy, A."
     year: 2022
@@ -42,9 +39,8 @@ citation:
     doi: "arXiv preprint arXiv:2204.08322"
 contact:
   email: "jandirk.wegner@uzh.ch"
+  email: "ma4451@columbia.edu"
 
 maintainers:
   - name: "Mitra Cattry"
     github: "mitraA90"
-  - name: "Raphael Hagen"
-    github: "norlandrhagen"
