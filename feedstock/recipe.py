@@ -212,3 +212,4 @@ if __name__ == "__main__":
     main(start, end,restart)
     elapsed = time.time() - t0
     print(f"✅ Batch {start}-{end-1} completed in {elapsed:.2f} seconds")
+
